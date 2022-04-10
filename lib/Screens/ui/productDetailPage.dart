@@ -49,15 +49,6 @@ class _ProductDetailState extends State<ProductDetail>
 
     getUserData();
 
-    dbHelper.getFavoriteId(text_userID, text_prodID).then((result){
-      setState(() {
-        isLove = result;
-        if (kDebugMode) {
-          print("Called Return value on state  $isLove");
-        }
-      });
-    });
-
   }
 
   Future<void> getUserData() async {
@@ -69,6 +60,17 @@ class _ProductDetailState extends State<ProductDetail>
       text_prodName = sp.getString("prod_name")!;
       text_prodPrice = sp.getString("prod_price")!;
       text_prodImage = sp.getString("prod_image")!;
+
+      dbHelper.getFavoriteId(sp.getString("user_id")!, sp.getString("prod_id")!).then((result){
+        setState(() {
+          isLove = result;
+          if (kDebugMode) {
+            print("Result Favorite $isLove");
+          }
+          return result;
+        });
+      });
+
     });
   }
 
@@ -95,38 +97,31 @@ class _ProductDetailState extends State<ProductDetail>
               Navigator.of(context).pop();
             },
           ),
-          _icon(isLove == 1 ? Icons.favorite : Icons.favorite_border, // 1 , 0
-              color: isLove == 1 ? LightColor.red : LightColor.black, // 1 , 0
+          _icon(isLove != 0 ? Icons.favorite : Icons.favorite_border, // 1 , 0
+              color: isLove != 0 ? LightColor.red : LightColor.black, // 1 , 0
               size: 15,
               padding: 12,
               isOutLine: false, onPressed: () {
                 setState(() {
-                  if (isLove == 1) {
+                  if (isLove != 0) {
                     isLove = 0;
-                    print("proses del");
                     dbHelper.unFav(text_userID, text_prodID).then((result){
                       setState(() {
                         var res  = result;
-                        print(res);
-                        if (kDebugMode) {
-                          print("Called Return value on state  $res");
-                        }
+                        print("proses del $res");
+                        alertDialog(context, "Remove Favorited");
                       });
                     });
                   }
-                  else if (isLove == 0) {
+                  else {
                     isLove = 1;
-                    print("proses add");
                     dbHelper.addFav(text_userID, text_prodID).then((result){
                       setState(() {
                         var res  = result;
-                        print(res);
-                        if (kDebugMode) {
-                          print("Called Return value on state  $res");
-                        }
+                        print("proses add $res");
+                        alertDialog(context, "Favorited");
                       });
                     });
-
                   }
                 });
               }),

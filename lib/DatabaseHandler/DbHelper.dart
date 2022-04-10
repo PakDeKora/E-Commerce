@@ -34,6 +34,8 @@ class DbHelper {
   static const String C_Id = 'id';
   static const String C_IDUser = 'user_id';
   static const String C_IDProduct = 'product_id';
+  static const String C_chartETY = 'chart_ety';
+
 
   static const int Version = 1;
 
@@ -69,6 +71,7 @@ class DbHelper {
         " $C_Id INTEGER PRIMARY KEY AUTOINCREMENT, "
         " $C_IDUser TEXT, "
         " $C_IDProduct TEXT "
+        " $C_chartETY INTEGER "
         ")");
     await db.execute("CREATE TABLE $table_favorite ("
         " $C_Id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -206,20 +209,15 @@ class DbHelper {
 
   Future<int> getFavoriteId(String userId, String prodId) async {
     var dbClient = await (db as FutureOr<Database>);
-    var favResult = await dbClient.rawQuery("SELECT * FROM $table_favorite WHERE "
-        "$C_IDUser = '$userId' AND $C_IDProduct = '$prodId' ");
+    var favResult = await dbClient
+        .rawQuery("SELECT * FROM $table_favorite WHERE "
+        "$C_IDUser = ? AND $C_IDProduct = ? ", [userId, prodId]);
     if (favResult.isEmpty) return 0;
     return favResult.length;
   }
 
   Future<List<Map<String, Object?>>> addFav(String _uId, String _pId) async {
     var dbClient = await (db as FutureOr<Database>);
-    Map<String, dynamic> row = {
-      C_IDUser : _uId,
-      C_IDProduct : _pId
-    };
-    // var data = {C_IDUser: _uId, C_IDProduct: _pId};
-    // var newFav = await dbClient.insert(table_favorite, row);
     var newFav = await dbClient
         .rawQuery("INSERT INTO $table_favorite ("
         "$C_IDUser, "
@@ -228,12 +226,54 @@ class DbHelper {
     return newFav;
   }
 
-  Future<int> unFav(String _uId, String _pId) async {
+  Future<List<Map<String, Object?>>> unFav(String _uId, String _pId) async {
     var dbClient = await (db as FutureOr<Database>);
-    var res = await dbClient.delete(table_favorite,
-        where: '$C_IDUser = ? AND $C_IDProduct = ?',
-        whereArgs: [_uId, _pId]);
-    return res;
+    var delFav = await dbClient
+        .rawQuery("DELETE FROM $table_favorite WHERE "
+        "$C_IDUser = ? AND $C_IDProduct = ? ", [_uId, _pId]);
+    return delFav;
   }
 
+  Future<List<Map<String, Object?>>> addChart(String _uId, String _pId, int _cEty) async {
+    var dbClient = await (db as FutureOr<Database>);
+    var validateChart = await dbClient
+        .rawQuery("SELECT * FROM $table_chart WHERE "
+        "$C_IDUser = ? AND $C_IDProduct = ? ", [_uId, _pId]);
+    if (validateChart.isEmpty ) {
+      var addChart = await dbClient
+          .rawQuery("INSERT INTO $table_chart ("
+          "$C_IDUser, "
+          "$C_IDProduct, "
+          "$C_chartETY, "
+          ") VALUES ( ?, ?, ? ) ", [_uId, _pId, _cEty]);
+      return addChart;
+    }
+    else {
+      var updateChart = await dbClient
+          .rawQuery("UPDATE $table_chart "
+          "SET $C_chartETY = ? "
+          "WHERE $C_IDUser = ? AND $C_IDProduct = ? ", [_cEty, _uId, _pId]);
+      return updateChart;
+    }
+  }
+
+  Future<List<Map<String, Object?>>> delChartEty(String _uId, String _pId, int _cEty) async {
+    var dbClient = await (db as FutureOr<Database>);
+    var validateChart = await dbClient
+        .rawQuery("SELECT * FROM $table_chart WHERE "
+        "$C_IDUser = ? AND $C_IDProduct = ? AND $C_chartETY != 0", [_uId, _pId]);
+    if (validateChart.isNotEmpty ) {
+      var updateChart = await dbClient
+          .rawQuery("UPDATE $table_chart "
+          "SET $C_chartETY = ? "
+          "WHERE $C_IDUser = ? AND $C_IDProduct = ? ", [_cEty, _uId, _pId]);
+      return updateChart;
+    }
+    else {
+      var delChart = await dbClient
+          .rawQuery("DELETE FROM $table_chart WHERE "
+          "$C_IDUser = ? AND $C_IDProduct = ? ", [_uId, _pId]);
+      return delChart;
+    }
+  }
 }
